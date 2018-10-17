@@ -1,3 +1,42 @@
+#' Generate Initial Set for a certain universe
+#'
+#' @param tickers vector of strings
+#' @param columns vector of strings for variables, colnames
+#' @param start.date date, i.e. as.Date("2013-01-01")
+#' @param append a list of xts dataframe that will be added in the output
+#'   and in the CleanSubset function, its availability will have impact on
+#'   the final outputs
+#' @return a list of xts dataframes with identical index, including traded assets
+#'   and other useful time series (not necessary an asset, i.e. VIX)
+#' @importFrom purrr map
+#' @importFrom magrittr %>%
+#' @export
+GenInitSet <- function(tickers, columns, start.date, append) {
+  initset <- tickers %>% map(function(x) GetXTS(x, start.date, as.Date(Sys.Date())) %>%
+                               `[`(, columns)) %>% `names<-`(tickers) %>% c(., append) %>% CleanSubset
+  initset %>% lapply(function(x) dim(x)[1]) %>% unlist %>% {all(. == .[1])} %>% stopifnot
+  initset
+}
+
+
+#' Generate a set for variables in dataframe from quotemedia
+#'
+#' @param columns vector of string a subset of columns in dataframes
+#'   in initset from GenInitSet
+#' @param initset list of xts dataframes from GenInitSet
+#' @param asset.names vector of string subset of tradable assets with
+#'   full set of variables, i.e. VIX might not have volumes
+#' @return a list for variables, same time index as which in initset
+#' @importFrom magrittr %>%
+#' @export
+GenVarSet <- function(columns, initset, asset.names) {
+  lapply(columns, function(var.name) {
+    do.call(cbind, lapply(initset[asset.names], function(df) df[, var.name])) %>%
+      `colnames<-`(lapply(asset.names, function(x) paste(var.name, x, sep = '.')))
+  }) %>% `names<-`(columns)
+}
+
+
 #' Clean a list of dataframe with same available `clean` index
 #'
 #' @param var.list a list of dataframe/xts, each is for one asset
@@ -9,7 +48,6 @@ CleanSubset <- function(var.list) {
   common.idx <- var.list %>% purrr::map(cleanidx) %>% Reduce(intersect, .) %>% as.Date(origin = "1970-01-01")
   var.list %>% purrr::map(function(df) df[common.idx])
 }
-
 
 
 #' Transfer a xts object to a tibble with date (yearmon/date)
@@ -37,7 +75,6 @@ tibbleXTS <- function(x, date.range = NULL) {
 
   tbl
 }
-
 
 
 #' Get a DataFrame for one variable given list of symbols and dates
