@@ -1,6 +1,6 @@
 # isocyanate
 
-**R Package for Project `isocyanate (R-N=C=O)`**  
+**R Package for Project [`isocyanate (R-N=C=O)`](https://en.wikipedia.org/wiki/Isocyanate)**  
 **Author:** Shu Wang (hugh.shu.wang@gmail.com)  
 **Created:** October 2018  
 
