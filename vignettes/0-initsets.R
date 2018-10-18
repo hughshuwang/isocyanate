@@ -24,3 +24,17 @@ sec.varset <- GenVarSet(columns, sec.initset, sectors)
 
 save(fac.initset, fac.varset, file = "data/factors.rda")
 save(sec.initset, sec.varset, file = "data/sectors.rda")
+
+# COMMENTS:
+# `initset` has all time series including tradable assets and indicators, each element is an asset or indicator
+# `varset` has all variables available for tradable assets, each element is a variable with tradable assets being columns
+# Two sets both have identical time indexes for all members.
+
+# ADDITIONAL VARIABLES (PENDING)
+# vars.xts$rollmean <- vars.xts$changep %>% rollapply(21, mean) %>% na.omit
+# vars.xts$rollvcov <- vars.xts$changep %>% GenVCOV('daily', VecVCOV, 21)
+# vars.tbl <- vars.xts %>% map(tibbleXTS)
+# map(seq_along(vars.tbl), function(i) write.csv(vars.tbl[[i]], file.names[i], row.names=FALSE))
+#
+# do.call(cbind, lapply(var.list, function(df) df[, 'changep'])) %>% cor %>% round(3)
+# # TODO: test the corr across rolling alphas of factors and sectors

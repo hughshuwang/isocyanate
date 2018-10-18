@@ -26,18 +26,6 @@
   - *Implementation*: R (xts, dplyr), Julia (JuliaStats, JuMP), Python (Pandas, TensorFlow)
 
 
-
-
-- **Data Inputs**: aggregate sectors and factors into one framework. Outputs: 2 kinds of list (just for traded assets), list of assets and list of variables, file saving functions. 
-
-  - Cut common index, members in the list must have same index. 
-  - First get a dirty huge asset (including SPY and VIX) list, data frames might differ in format, get clean index.
-  - Global signal: SPY and VIX should be separated, but using same index.
-  - Save 2 list for traded asset.
-
-
-
-
 - **Signal Generation and Optimization Pipelines**:
 
   - `NumericSignal(df::1dxts/2dxts, f::ScoringMethod, period::Int64, dimdf::Number)::1dxts{Number}` 

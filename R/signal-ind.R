@@ -282,6 +282,17 @@ GenFeatScale <- function(df) {
 }
 
 
+#' Generate Empirical Quantile for a vector with its own info
+#'
+#' @param vec vector/1dxts
+#' @return vector/1dxts of empirical quantile based on its emp distr
+#' @importFrom magrittr %>%
+#' @export
+GenEmpQuantileVec <- function(vec) {
+  vec %>% as.vector %>% sapply(., stats::ecdf(.)) %>% xts::xts(order.by = zoo::index(vec))
+}
+
+
 #' Generate Quantile using Empirical Distribution for a dataframe
 #'
 #' @export

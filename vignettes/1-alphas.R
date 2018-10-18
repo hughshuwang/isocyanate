@@ -2,92 +2,190 @@
 
 rm(list = ls())
 
-load("data/factors.rda")
-load("data/sectors.rda")
+library(ash)
+library(copula)
+library(dplyr)
+library(isocyanate)
+library(KernSmooth)
+library(magrittr)
+library(MASS)
+library(purrr)
+library(readr)
+library(stats)
+library(VineCopula)
+library(zoo)
 
-ret <- sec.vars$changep
-alphas <- rollapply(ret, 50, function(df) {
+set.seed(12896)
+
+# load("data/factors.rda")
+load("data/sectors.rda")
+logret <- log(sec.varset$changep + 1)
+
+# Inspect alpha: estimate corr effect ----
+winlen <- 50
+alphas <- rollapply(logret, winlen, function(df) {
   apply(df, 2, function(vec, mkt) {
     vec[length(vec)] - lm(vec ~ mkt)$coefficients[2] * mkt[length(mkt)]
   }, mkt = df[,ncol(df)])
 }, by.column = F) %>% na.omit
-
 alphas %>% cor %>% round(2)
-#             changepMTUM changepQUAL changepVLUE changepSIZE changepUSMV
-# changepMTUM        1.00        0.11       -0.29        0.01        0.21
-# changepQUAL        0.11        1.00       -0.08        0.06        0.29
-# changepVLUE       -0.29       -0.08        1.00        0.29       -0.25
-# changepSIZE        0.01        0.06        0.29        1.00        0.17
-# changepUSMV        0.21        0.29       -0.25        0.17        1.00
+pca1 = prcomp(alphas[, 1:9], scale. = TRUE)
+
+  # CONCLUSION:
+  # for 6 factors: alpha corr around 20, highest 30, some low
+  # for 9 sectors: alpha corr on average lower than 10%,
+  # so the bias generated from inaccurate conditional corr
+  # will not be very high
+
+  # DRAFT OF CONDITIONAL ALPHA FOR FACTORS:
+  # good.idx <- ret$changepSPY > -0.001
+  # good.idx <- good.idx[zoo::index(alphas)]
+  # par(mfrow = c(3, 2))
+  # for (i in 1:6) {
+  #   hist(alphas[good.idx, i], breaks = 200, main = colnames(alphas)[i], xlim = c(-0.02, 0.02))
+  #   # for each one, do a smooth density and plot it in the plot
+  #   # look at the distribution and determine the properties
+  #   # monitor the sample size
+  # }
+  # for (i in 1:6) {
+  #   hist(alphas[!good.idx, i], breaks = 200, main = colnames(alphas)[i], xlim = c(-0.02, 0.02))
+  # } # USMV very difference # when market down, size higher risk, mv and vlue lower risk
 
 
-# build a tool, for individual conditions or overall conditions
-# ind: one return, one TF series
-# ovr: one dataframe, one TF series
+# Stage I: EDE-based Signal Selection ----
 
-good.idx <- ret$changepSPY > -0.001
-good.idx <- good.idx[zoo::index(alphas)]
+winlen <- 5 # fix a week # different length, have different infomation,
+  # 5 days and 10 days are pretty much the same, combine?
+ret.spy <- logret$changep.SPY
+quantiles <- ret.spy %>% zoo::rollapply(winlen, sum) %>% na.omit %>% GenEmpQuantileVec
+  # numeric signal, no need to care about index at this moment
 
-par(mfrow = c(3, 2))
-for (i in 1:6) {
-  hist(alphas[good.idx, i], breaks = 200, main = colnames(alphas)[i], xlim = c(-0.02, 0.02))
-  # for each one, do a smooth density and plot it in the plot
-  # look at the distribution and determine the properties
-  # monitor the sample size
-}
-for (i in 1:6) {
-  hist(alphas[!good.idx, i], breaks = 200, main = colnames(alphas)[i], xlim = c(-0.02, 0.02))
-} # USMV very difference # when market down, size higher risk, mv and vlue lower risk
+n.group <- 10; cuts <- seq(0, 1, 1/n.group)
+  # cuts <- c(0, 1/10, 3/10, 0.5, 1-3/10, 1-1/10, 1) # cuts <- seq(0, 1, 1/n.group)
+bools <- lapply(1:n.group, function(i) {
+  (quantiles < cuts[i+1] & quantiles > cuts[i]) %>%
+    xts::xts(zoo::index(quantiles)) %>% xts::lag.xts(1) # lag NOW!
+}) # bool 2d signals with same index as the numeric signal and MIGHT HAVE NAs
+  # bools %>% lapply(xts::periodicity)
+  # xts::periodicity(quantiles) # should equal to above
 
+# TECHNOLOGY SECTOR
+ret.xlk <- logret$changep.XLK # 1, (2, 3, 4, 10), (5, 6, 7, 8, 9)
+dens.bounds <- c(quantile(ret.xlk, 0.001), quantile(ret.xlk, 1-0.001))
+ret.xlk <- ret.xlk[ret.xlk < dens.bounds[2] & ret.xlk > dens.bounds[1]]
+groups <- lapply(bools, function(bool) {xts::merge.xts(ret.xlk, bool) %>% na.omit() %>%
+    `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}})
 
-vars.xts$rollmean <- vars.xts$changep %>% rollapply(21, mean) %>% na.omit
-vars.xts$rollvcov <- vars.xts$changep %>% GenVCOV('daily', VecVCOV, 21)
+bw <- 0.003; gs <- 128L # TODO: how to tune this? adaptive smoothing
+dens <- lapply(groups, function(group) {
+  # ash1(bin1(sample, ab = dens.bounds, nbin = 128))$y %>% {./sum(.)} # EDE1
+  bkde(group, "normal", FALSE, bw, gs, dens.bounds)$y %>% {./sum(.)} # EDE2
+}) # densities
 
-vars.tbl <- vars.xts %>% map(tibbleXTS)
-
-map(seq_along(vars.tbl), function(i) write.csv(vars.tbl[[i]], file.names[i], row.names=FALSE))
-
-save(vars.tbl, file = "data/Pop_variables.rda")
-
-
-
-do.call(cbind, lapply(var.list, function(df) df[, 'changep'])) %>% cor %>% round(3)
-# TODO: test the corr across rolling alphas of factors and sectors
-
-# Return Quantile Conditional Tests ====
-ret <- daily.ret[, "SPY"]
-hist(ret, breaks = 500, freq = FALSE) # TODO: cut the ret
-curve(dnorm(x, mean=mean(ret), sd=sd(ret)), add=TRUE)
-
-winlen <- 5 # fix a week
-quantiles <- ret %>% zoo::rollapply(winlen, sum) %>% na.omit %>% as.vector %>% sapply(., stats::ecdf(.)) %>%
-  xts::xts(order.by = zoo::index(ret)[winlen:length(ret)])
-
-n.group <- 6 # fix
-# cuts <- seq(0, 1, 1/n.group) # equally spaced, quantile cuts, make sure subgroup size and avoid cutting line
-cuts <- c(0, 1/10, 3/10, 0.5, 1-3/10, 1-1/10, 1)
-groups <- lapply(1:n.group, function(i) {
-  (quantiles < cuts[i+1] & quantiles > cuts[i]) %>% xts::xts(zoo::index(quantiles)) %>%
-    xts::lag.xts(1) %>% xts::merge.xts(., ret) %>% na.omit() %>%
-    `colnames<-`(c('idx', 'ret')) %>% {.$ret[.$idx != 0]}
+bbands <- lapply(groups, function(group) {
+  subs <- do.call(rbind, lapply(1:100, function(i) {
+    sub.idx <- sample(1:length(group), length(group) * pctg)
+    bkde(group[sub.idx], "normal", bandwidth = bw, gridsize = gs, range.x = dens.bounds)$y %>% {./sum(.)}
+  }))
+  means <- subs %>% apply(2, mean); sds <- subs %>% apply(2, stats::sd)
+  cbind('2sd lower' = means - 2*sds, 'mean' = means, '2sd upper' = means + 2*sds)
+  # plot(means, type = 'l'); lines(means - 2*sds, col = "blue"); lines(means + 2*sds, col = "red")
 })
+bbmean <- lapply(bbands, function(df) df[, 2]) # bb mean
+bbnoise <- lapply(bbands, function(df) df[, 2] - df[, 1]) # bb std
 
-par(mfrow = c(2, 3))
-# TODO: cut before drawing plots, so that they have same break indexes
-hists <- lapply(1:n.group, function(x) {
-  sub.ret <- groups[[x]]
-  hist(sub.ret, breaks = 200, xlim = c(-0.1, 0.1), freq = FALSE)
-  curve(dnorm(x, mean = mean(sub.ret), sd = sd(sub.ret)), add = T)
+sumsq <- function(dens, i, j) {sum((dens[[i]] - dens[[j]]) ^ 2)} # distance func
+adjsq <- function(){} # adjusted measure for distance, give more weights
+
+dmat <- sapply(1:n.group, function(i) {
+  sapply(1:n.group, function(j) {
+    sumsq(dens, i, j)
+  })
+}) # distance matrix
+
+hc <- hclust(as.dist(dmat), method = "average") # different method yield different results
+plot(hc); hc$height # if n.group large (20), height increase, but some from sampling noise
+# pretty much the same results for ASH and KernSmooth
+# decision making for cutting conditions: eyeballing for now
+
+hc$order # spotify high/low volatility situation
+
+  # estimate density of sample, and formulate the right output
+  # TODO: plot outputs to show results, pick different time period to TEST CONSISTENCY
+  # TODO: define new measure that can give tail more weights
+  # TODO: formulate an out-of-sample test of fitting the distribution compared with
+  # TODO: test simple copula simulation
+
+# Stage II: Multiasset Copula Estimation ====
+# first generate bools from Stage I, test signal: SPY returns in past 5 days, quantiles
+
+bw <- 0.003; gs <- 128L
+
+# TECHNOLOGY SECTOR
+ret.xlk <- logret$changep.XLK # 1, (2, 3, 4, 10), (5, 6, 7, 8, 9)
+groups.xlk <- lapply(bools, function(bool) {
+  xts::merge.xts(ret.xlk, bool) %>% na.omit() %>%
+    `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}
 })
+# dens.xlk <- lapply(groups.xlk, function(group) {
+#   bkde(group, "normal", FALSE, bw, gs, c(min(group), max(group)))$y %>% {./sum(.)}})
 
-lapply(1:n.group, function(x) {
-  hists[[x]]$density %>% plot(type = 'l')
+# CD
+ret.xly <- logret$changep.XLY # 1, (2, 3, 4, 10), (5, 6, 7, 8, 9)
+groups.xly <- lapply(bools, function(bool) {
+  xts::merge.xts(ret.xly, bool) %>% na.omit() %>%
+    `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}
 })
+# dens.xly <- lapply(groups.xly, function(group) {
+#   bkde(group, "normal", FALSE, bw, gs, c(min(group), max(group)))$y %>% {./sum(.)}})
 
-lapply(2:n.group, function(x) {
-  (hists[[1]]$density - hists[[x]]$density) %>% plot(type = 'l')
+# Financials
+ret.xlf <- logret$changep.XLF # 1, (2, 3, 4, 10), (5, 6, 7, 8, 9)
+groups.xlf <- lapply(bools, function(bool) {
+  xts::merge.xts(ret.xlf, bool) %>% na.omit() %>%
+    `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}
 })
+# dens.xlf <- lapply(groups.xlf, function(group) {
+#   bkde(group, "normal", FALSE, bw, gs, c(min(group), max(group)))$y %>% {./sum(.)}})
 
-# Stage II: conditioning on systematic indicators, capula sampling from estimated density
-# TODO: time index mgmt
 
+  # NOTE: do not cut the signal using 0.1% quantiles here, match multiassets
+  # groups.xlk %>% lapply(dim); groups.xly %>% lapply(dim) # should be identical
+
+# Copula simulation: https://datascienceplus.com/modelling-dependence-with-copulas/
+i <- 1 # the first condition
+groups <- list(groups.xlk, groups.xly, groups.xlf)
+cond.rets <- groups %>% lapply(function(x) x[[i]]) %>% do.call(cbind, .) %>% `colnames<-`(c("XLK", "XLY", "XLF"))
+cond.qtls <- lapply(1:ncol(cond.rets), function(i) GenEmpQuantileVec(cond.rets[, i])) %>%
+  Reduce(xts::merge.xts, .) %>% `colnames<-`(c("XLK", "XLY", "XLF"))
+cond.pobs <- VineCopula::pobs(as.matrix(cond.rets))
+scatter.smooth(cond.qtls[, 1], cond.qtls[, 2])
+
+
+sapply(1:(ncol(cond.qtls)-1), function(i) {
+  sapply((i+1):ncol(cond.qtls), function(j) {
+    print(c(i, j))
+    print(BiCopSelect(cond.pobs[, i], cond.pobs[, j], familyset=NA))
+  })
+}) # all pick t copula
+
+
+# MANUAL SET
+# sigma <- cor(cond.qtls) # sigma
+# z <- mvrnorm(n, mu = rep(0, 3), Sigma=sigma,empirical=T)
+tcop.coef <- tCopula(dim = 3) %>% fitCopula(cond.pobs, method='ml') %>% coef
+tcop <- tCopula(dim = 3, param = tcop.coef[1], df = tcop.coef[2])
+# persp(tcop, dCopula) # dim 2
+
+u <- rCopula(10000, tcop)
+# plot(u[, 1], u[, 3], pch='.', col='blue'); cor(u, method='spearman')
+sim <- lapply(1:ncol(u), function(i){
+  as.vector(sapply(u[, i], function(x) quantile(cond.rets[, i], x)))
+  # potential improvement: used smoothed distributions
+}) %>% do.call(cbind, .)
+
+par(mfrow = c(3, 1))
+for (i in 1:3) {cond.rets[, i] %>% hist(breaks = 300)}
+for (i in 1:3) {sim[, i] %>% hist(breaks = 300)}
+
+write.csv(sim, file = "data/sample.csv")
