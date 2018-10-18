@@ -1,13 +1,15 @@
 Package: isocyanate
 Type: Package
-Title: What the Package Does (Title Case)
+Title: isocyanate (R-N=C=O)
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Author: Shu Wang <hugh.shu.wang@gmail.com>
+Maintainer: Shu Wang <hugh.shu.wang@gmail.com>
+Description: Portfolio Optimization Framework based on
+    Non-parametric Statistics and Convex Stochastic Control
 Depends: R (>= 3.5.1)
 Imports:
+    ash,
+    copula,
     data.table,
     dplyr,
     ggplot2,
@@ -15,10 +17,14 @@ Imports:
     gridExtra,
     gtable,
     haven,
+    KernSmooth,
     magrittr,
+    MASS,
     purrr,
+    readr,
     stats,
     utils,
+    VineCopula,
     xts,
     zoo
 License: MIT

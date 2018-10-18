@@ -33,6 +33,39 @@ SignalWrapper <- function(FUN, params,
 
 
 
+#' Generate conditional groups based on bool signals and a variable/return xts
+#'
+#' @param ret xts variable/return
+#' @param bools a 2d xts bool, Vector{1dxts{bool}}
+#' @return a list of 1dxts, same size as bools
+#' @importFrom magrittr %>%
+#' @export
+GenCondGroups <- function(ret, bools) {
+  lapply(bools, function(bool) {xts::merge.xts(ret, bool) %>% stats::na.omit() %>%
+      `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}})
+}
+
+
+
+#' Generate bool signal vector for a given continuous 0-1 (quantile) signal
+#'
+#' @param signal xts numerical from 0 to 1, i.e. from GenEmpQuantileVec
+#' @param n.group int number of groups divided
+#' @param cuts vector of number used to divide groups
+#' @examples
+#'   GenBoolSignal(quantiles, 6, cuts = c(0, 1/10, 3/10, 0.5, 1-3/10, 1-1/10, 1))
+#'   GenBoolSignal(quantiles, 10)
+#' @importFrom magrittr %>%
+#' @export
+GenBoolSignal <- function(signal, n.group = 10, cuts = seq(0, 1, 1/n.group)) {
+  stopifnot(range(signal)[1] >= 0 && range(signal)[2] <= 1)
+  lapply(1:n.group, function(i) {
+    (signal < cuts[i+1] & signal >= cuts[i]) %>% xts::xts(zoo::index(signal)) %>% xts::lag.xts(1) # lag NOW!
+  }) # bool 2d signals with same index as the numeric signal and MIGHT HAVE NAs
+}
+
+
+
 #' Generate dynamic relative scores for input matrix
 #'
 #' @param data xts object vectorized named rolling (vcov) dataframe
@@ -413,3 +446,29 @@ VecASYM <- function(raw.df) {
 VecVCOV <- function(raw.df) {
   unique(as.vector(cov(raw.df)))
 }
+
+
+#' Cut range for one single series
+#'
+#' @param series xts object
+#' @param upper,lower numeric limits
+#' @export
+CutSeriesRange <- function(series, upper, lower) {
+  series[series < lower] <- lower; series[series > upper] <- upper
+  series
+}
+
+
+#' Cut range for one single series using quantiles
+#'
+#' @param series xts object
+#' @param upper,lower numeric, quantiles, i.e. 0.99, 0.01
+#' @export
+CutSeriesQuantile <- function(series, upper = 1 - 0.001, lower = 0.001) {
+  bounds <- c(quantile(series, upper), quantile(series, lower))
+  series[series < bounds[2]] <- bounds[2]; series[series > bounds[1]] <- bounds[1]
+  series
+}
+
+
+

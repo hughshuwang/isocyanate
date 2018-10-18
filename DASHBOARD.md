@@ -2,31 +2,34 @@
 
 - **Topics**:
 
-  - [ ] Non-parametric Inference & Statistical Learning: 
+  - [ ] Non-para Inf & Stat Learning: 
     - [x] Bootstrap resampling & sampling noise measurement
     - [x] Average shifted histogram (`ASH`)
     - [ ] Adaptive Gaussian kernel smoothing density (`KernSmooth`)
-    - [ ] Distance matrix (generated from CRRA)
+      - [ ] Bootstrap std based adaptive radius
+      - [ ] Density based adaptive radius (PENDING)
+      - [ ] Learning algorithm (PENDING, too many hyperparams)
+    - [ ] Fitting CRRA for returns (asymmetric)
+    - [ ] Define distances (Measure for Modeling Risks and differentiating power)
     - [x] Hierarchical clustering (diff methods)
-  - [ ] Empirical asset pricing experiments: predictive signals research 
+  - [ ] Predictive Signals (Forward Looking):
     - [ ] Momentum (systematic and individual/sector)
     - [ ] Volatility clustering (systematic and individual/sector)
     - [ ] Dynamic factor loadings (individual/sector)
     - [ ] Alpha dynamics (individual/sector)
     - [ ] Market turbulence (systematic)
     - [ ] Tail risk modeling and forecasts (systematic)
-  - [ ] Numerical Simulations: 
+  - [ ] Numerical Simulations:
     - [x] Multi-asset T-Copulas for better tail risk fits (for systematic signals)
     - [ ] Conditional correlation structure measurement
     - [ ] Empirical Measure Change (for individual/sector signals)
-  - [ ] Single-period Convex Stochastic Control
-    - [ ] Risk-adjusted obj
-    - [ ] Beta constraints (for alpha signals)
-  - [x] Implementation: 
-    - [x] R (xts, tidyverse)
-    - [x] Julia (JuliaStats, JuMP)
-    - [x] Python (Pandas, TensorFlow, Keras)
+  - [ ] Single-period Convex Stochastic Control:
+    - [ ] Convex risk-adjusted objective functions
 
+    - [ ] Convex constraint sets
+
+      - [ ] Self financing constraints
+      - [ ] Beta constraints for alpha signals
 
 
 
