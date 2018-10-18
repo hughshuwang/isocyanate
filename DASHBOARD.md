@@ -1,34 +1,39 @@
-### TODO
+### Dashboard
 
 - **Topics**:
 
-  - Non-parametric Inference & Statistical Learning: 
-    - Bootstrap resampling
-    - Empirical density estimation
-    - Kernel smoothing
-    - Adaptive smoothing
-    - Distance matrix
-    - Sampling noise measurement
-  - Unsupervised Learning: clustering (based on estimated distributions)
-    - Clustering algorithm research
-  - Empirical asset pricing experiments: predictive signals research 
-    - Momentum (systematic and individual/sector)
-    - Volatility clustering (systematic and individual/sector)
-    - Dynamic factor loadings (individual/sector)
-    - Alpha dynamics (individual/sector)
-    - Market turbulence (systematic)
-    - Tail risk modeling and forecasts (systematic)
-  - Numerical Simulations: 
-    - Gaussian Copulas (for systematic signals)
-    - Empirical Measure Change (for individual/sector signals)
-  - Single-period convex stochastic control
-    - Objective function play-around (estimation for cost functions and risk models)
-  - *Implementation*: R (xts, dplyr), Julia (JuliaStats, JuMP), Python (Pandas, TensorFlow)
+  - [ ] Non-parametric Inference & Statistical Learning: 
+    - [x] Bootstrap resampling & sampling noise measurement
+    - [x] Average shifted histogram (`ASH`)
+    - [ ] Adaptive Gaussian kernel smoothing density (`KernSmooth`)
+    - [ ] Distance matrix (generated from CRRA)
+    - [x] Hierarchical clustering (diff methods)
+  - [ ] Empirical asset pricing experiments: predictive signals research 
+    - [ ] Momentum (systematic and individual/sector)
+    - [ ] Volatility clustering (systematic and individual/sector)
+    - [ ] Dynamic factor loadings (individual/sector)
+    - [ ] Alpha dynamics (individual/sector)
+    - [ ] Market turbulence (systematic)
+    - [ ] Tail risk modeling and forecasts (systematic)
+  - [ ] Numerical Simulations: 
+    - [x] Multi-asset T-Copulas for better tail risk fits (for systematic signals)
+    - [ ] Conditional correlation structure measurement
+    - [ ] Empirical Measure Change (for individual/sector signals)
+  - [ ] Single-period Convex Stochastic Control
+    - [ ] Risk-adjusted obj
+    - [ ] Beta constraints (for alpha signals)
+  - [x] Implementation: 
+    - [x] R (xts, tidyverse)
+    - [x] Julia (JuliaStats, JuMP)
+    - [x] Python (Pandas, TensorFlow, Keras)
+
+
 
 
 - **Signal Generation and Optimization Pipelines**:
 
   - `NumericSignal(df::1dxts/2dxts, f::ScoringMethod, period::Int64, dimdf::Number)::1dxts{Number}` 
+
     - in Julia write multiple methods using Multiple Dispatch, rolling window apply embedded
     - i.e. `NumericSignal(SPYret, IfPositive,)`
 

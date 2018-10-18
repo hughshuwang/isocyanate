@@ -1,4 +1,4 @@
-#### THIS SCRIPT IS UNDER CONSTRUCTION ####
+# FUNCTIONALITIES DEMONSTRATED IN THIS SCRIPT WILL BE PACKED INTO THE PKG
 
 rm(list = ls())
 
@@ -114,78 +114,4 @@ hc$order # spotify high/low volatility situation
   # TODO: plot outputs to show results, pick different time period to TEST CONSISTENCY
   # TODO: define new measure that can give tail more weights
   # TODO: formulate an out-of-sample test of fitting the distribution compared with
-  # TODO: test simple copula simulation
 
-# Stage II: Multiasset Copula Estimation ====
-# first generate bools from Stage I, test signal: SPY returns in past 5 days, quantiles
-
-bw <- 0.003; gs <- 128L
-
-# TECHNOLOGY SECTOR
-ret.xlk <- logret$changep.XLK # 1, (2, 3, 4, 10), (5, 6, 7, 8, 9)
-groups.xlk <- lapply(bools, function(bool) {
-  xts::merge.xts(ret.xlk, bool) %>% na.omit() %>%
-    `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}
-})
-# dens.xlk <- lapply(groups.xlk, function(group) {
-#   bkde(group, "normal", FALSE, bw, gs, c(min(group), max(group)))$y %>% {./sum(.)}})
-
-# CD
-ret.xly <- logret$changep.XLY # 1, (2, 3, 4, 10), (5, 6, 7, 8, 9)
-groups.xly <- lapply(bools, function(bool) {
-  xts::merge.xts(ret.xly, bool) %>% na.omit() %>%
-    `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}
-})
-# dens.xly <- lapply(groups.xly, function(group) {
-#   bkde(group, "normal", FALSE, bw, gs, c(min(group), max(group)))$y %>% {./sum(.)}})
-
-# Financials
-ret.xlf <- logret$changep.XLF # 1, (2, 3, 4, 10), (5, 6, 7, 8, 9)
-groups.xlf <- lapply(bools, function(bool) {
-  xts::merge.xts(ret.xlf, bool) %>% na.omit() %>%
-    `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}
-})
-# dens.xlf <- lapply(groups.xlf, function(group) {
-#   bkde(group, "normal", FALSE, bw, gs, c(min(group), max(group)))$y %>% {./sum(.)}})
-
-
-  # NOTE: do not cut the signal using 0.1% quantiles here, match multiassets
-  # groups.xlk %>% lapply(dim); groups.xly %>% lapply(dim) # should be identical
-
-# Copula simulation: https://datascienceplus.com/modelling-dependence-with-copulas/
-i <- 1 # the first condition
-groups <- list(groups.xlk, groups.xly, groups.xlf)
-cond.rets <- groups %>% lapply(function(x) x[[i]]) %>% do.call(cbind, .) %>% `colnames<-`(c("XLK", "XLY", "XLF"))
-cond.qtls <- lapply(1:ncol(cond.rets), function(i) GenEmpQuantileVec(cond.rets[, i])) %>%
-  Reduce(xts::merge.xts, .) %>% `colnames<-`(c("XLK", "XLY", "XLF"))
-cond.pobs <- VineCopula::pobs(as.matrix(cond.rets))
-scatter.smooth(cond.qtls[, 1], cond.qtls[, 2])
-
-
-sapply(1:(ncol(cond.qtls)-1), function(i) {
-  sapply((i+1):ncol(cond.qtls), function(j) {
-    print(c(i, j))
-    print(BiCopSelect(cond.pobs[, i], cond.pobs[, j], familyset=NA))
-  })
-}) # all pick t copula
-
-
-# MANUAL SET
-# sigma <- cor(cond.qtls) # sigma
-# z <- mvrnorm(n, mu = rep(0, 3), Sigma=sigma,empirical=T)
-tcop.coef <- tCopula(dim = 3) %>% fitCopula(cond.pobs, method='ml') %>% coef
-tcop <- tCopula(dim = 3, param = tcop.coef[1], df = tcop.coef[2])
-# persp(tcop, dCopula) # dim 2
-
-u <- rCopula(10000, tcop)
-# plot(u[, 1], u[, 3], pch='.', col='blue'); cor(u, method='spearman')
-sim <- lapply(1:ncol(u), function(i){
-  as.vector(sapply(u[, i], function(x) quantile(cond.rets[, i], x)))
-  # potential improvement: used smoothed distributions
-}) %>% do.call(cbind, .)
-
-par(mfrow = c(3, 1))
-for (i in 1:3) {cond.rets[, i] %>% hist(breaks = 300)}
-for (i in 1:3) {sim[, i] %>% hist(breaks = 300)}
-
-write.csv(sim, file = "data/sample.csv")
