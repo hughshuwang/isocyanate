@@ -18,16 +18,9 @@ library(zoo)
 set.seed(12896)
 load("data/sectors.rda")
 logret <- log(sec.varset$changep + 1)
-
-# Inspect Rolling Alpha: Full-sample Corr ----
-winlen <- 50
-alphas <- rollapply(logret, winlen, function(df) {
-  apply(df, 2, function(vec, mkt) {
-    vec[length(vec)] - lm(vec ~ mkt)$coefficients[2] * mkt[length(mkt)]
-  }, mkt = df[,ncol(df)])
-}, by.column = F) %>% na.omit
-alphas %>% cor %>% round(2)
-pca1 = prcomp(alphas[, 1:9], scale. = TRUE)
+regres <- logret %>% RollingRegres(21, 'changep.SPY')
+regres %>% cor %>% round(2) # res not correlated
+pca1 <- prcomp(regres[, 1:9], scale. = TRUE)
 
   # CONCLUSION:
   # for 6 factors: alpha corr around 20, highest 30, some low
