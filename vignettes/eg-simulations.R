@@ -38,33 +38,21 @@ bools <- lapply(1:n.group, function(i) {
   # xts::periodicity(quantiles) # should equal to above
 
 bw <- 0.003; gs <- 128L
-# TECHNOLOGY SECTOR
 ret.xlk <- logret$changep.XLK # 1, (2, 3, 4, 10), (5, 6, 7, 8, 9)
 groups.xlk <- lapply(bools, function(bool) {
   xts::merge.xts(ret.xlk, bool) %>% na.omit() %>%
     `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}
 })
-# dens.xlk <- lapply(groups.xlk, function(group) {
-#   bkde(group, "normal", FALSE, bw, gs, c(min(group), max(group)))$y %>% {./sum(.)}})
-
-# CD
 ret.xly <- logret$changep.XLY # 1, (2, 3, 4, 10), (5, 6, 7, 8, 9)
 groups.xly <- lapply(bools, function(bool) {
   xts::merge.xts(ret.xly, bool) %>% na.omit() %>%
     `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}
 })
-# dens.xly <- lapply(groups.xly, function(group) {
-#   bkde(group, "normal", FALSE, bw, gs, c(min(group), max(group)))$y %>% {./sum(.)}})
-
-# Financials
 ret.xlf <- logret$changep.XLF # 1, (2, 3, 4, 10), (5, 6, 7, 8, 9)
 groups.xlf <- lapply(bools, function(bool) {
   xts::merge.xts(ret.xlf, bool) %>% na.omit() %>%
     `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}
 })
-# dens.xlf <- lapply(groups.xlf, function(group) {
-#   bkde(group, "normal", FALSE, bw, gs, c(min(group), max(group)))$y %>% {./sum(.)}})
-
 
   # NOTE: do not cut the signal using 0.1% quantiles here, match multiassets
   # groups.xlk %>% lapply(dim); groups.xly %>% lapply(dim) # should be identical

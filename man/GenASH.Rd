@@ -4,12 +4,12 @@
 \alias{GenASH}
 \title{Generate density list for groups using ASH}
 \usage{
-GenASH(groups, nbin = 128)
+GenASH(groups, nbin = 128, range = NULL)
 }
 \arguments{
 \item{groups}{a list of conditional variables from GenCondGroups}
 
-\item{bw, gs}{hyperparameters}
+\item{nbin}{number of bin hyperparameter}
 }
 \value{
 list of density series
