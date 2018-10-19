@@ -80,7 +80,7 @@ tcop.coef <- tCopula(dim = 3) %>% fitCopula(cond.pobs, method='ml') %>% coef
 tcop <- tCopula(dim = 3, param = tcop.coef[1], df = tcop.coef[2])
 # persp(tcop, dCopula) # dim 2
 
-u <- rCopula(10000, tcop)
+u <- rCopula(50000, tcop)
 # plot(u[, 1], u[, 3], pch='.', col='blue'); cor(u, method='spearman')
 sim <- lapply(1:ncol(u), function(i){
   as.vector(sapply(u[, i], function(x) quantile(cond.rets[, i], x)))
@@ -91,4 +91,5 @@ par(mfrow = c(3, 1))
 for (i in 1:3) {cond.rets[, i] %>% hist(breaks = 300)}
 for (i in 1:3) {sim[, i] %>% hist(breaks = 300)}
 
-write.csv(sim, file = "data/sample.csv")
+write.table(sim, file = "data-raw/sample.csv", col.names = F, row.names = FALSE, sep=',')
+  # write.csv will include colnames
