@@ -4,12 +4,14 @@
 \alias{MonthlyBeta}
 \title{Generate monthly beta series from daily returns}
 \usage{
-MonthlyBeta(returns, mktcol = "SPY")
+MonthlyBeta(returns, mktcol = "SPY", intercept = TRUE)
 }
 \arguments{
 \item{returns}{xts dataframe with multiple assets, daily returns}
 
 \item{mktcol}{string of colname of market asset}
+
+\item{intercept}{bool fit the intercept or not}
 }
 \value{
 beta xts dataframe with yearmon index

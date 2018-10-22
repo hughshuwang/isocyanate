@@ -4,12 +4,14 @@
 \alias{MonthlyRegres}
 \title{Generate monthly last residual series from daily returns}
 \usage{
-MonthlyRegres(returns, mktcol = "SPY")
+MonthlyRegres(returns, mktcol = "SPY", intercept = TRUE)
 }
 \arguments{
 \item{returns}{xts dataframe with multiple assets, daily returns}
 
 \item{mktcol}{string of colname of market asset}
+
+\item{intercept}{bool fit the intercept or not}
 }
 \value{
 last residual xts dataframe with yearmon index

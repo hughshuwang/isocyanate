@@ -8,10 +8,10 @@
 
 ## Conventions
 
-- Following [Standard R Package Development Guide](http://r-pkgs.had.co.nz/).
 - Following [Google's R Style Guide](https://google.github.io/styleguide/Rguide.xml).
+- Following [Standard R Package Development Guide](http://r-pkgs.had.co.nz/).
 - Following [AngularJS Git Commit Message Rules](https://gist.github.com/stephenparish/9941e89d80e2bc58a153).
-- Deployed on RStudio using [devtools](https://github.com/r-lib/devtools) and documented using [roxygen2](https://github.com/klutometis/roxygen).
+- Deployed and documented using [devtools](https://github.com/r-lib/devtools) and [roxygen2](https://github.com/klutometis/roxygen).
 
 
 ## Installation

@@ -18,11 +18,19 @@ library(zoo)
 set.seed(12896)
 load("data/sectors.rda") # use sectors to get maximum period
 logret <- log(sec.varset$changep + 1) # change to log returns
-isperiod <- "1999/2017" # TEST CONSISTENCY
+period <- "1999/2017" # TEST CONSISTENCY
 
-ret.xlk <- logret$changep.XLK[isperiod] %>% CutSeriesQuantile
-ret.spy <- logret$changep.SPY[isperiod]; winlen <- 10 # fix a week # different length, have different infomation, 5-10 pretty same
-quantiles <- ret.spy %>% zoo::rollapply(winlen, sum) %>% na.omit %>% GenEmpQuantileVec # num signal
+ret.xlk <- logret$changep.XLK[period] %>% CutSeriesQuantile
+ret.spy <- logret$changep.SPY[period] # fix a week # different length, have different infomation, 5-10 pretty same
+
+quantiles <- ret.spy %>% zoo::rollapply(10, sum) %>% na.omit %>% GenEmpQuantileVec # num signal
+
+  # the rolling window has some shortcomings, lagged responce, not robust, not sensitive to abnormalies
+  # CONC: pretty stable variance of regres when applying different length of window
+  # CONC: alphas have high auto-corr, low cross-sectional auto-corr
+  # CONC: should model alpha shocks
+  # TODO: use olhc to get another kind of beta, but won't be much different
+
 # bools <- GenBoolSignal(quantiles, n.group = 6, cuts = c(0, 1/10, 3/10, 0.5, 1-3/10, 1-1/10, 1))
 bools <- GenBoolSignal(quantiles, n.group = 9) # signals
 

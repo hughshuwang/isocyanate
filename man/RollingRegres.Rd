@@ -4,7 +4,7 @@
 \alias{RollingRegres}
 \title{Rolling apply last residual of reg: ret~ret.mkt}
 \usage{
-RollingRegres(returns, winlen = 21, mktcol = "SPY")
+RollingRegres(returns, winlen = 21, mktcol = "SPY", intercept = TRUE)
 }
 \arguments{
 \item{returns}{xts df of returns, one column is the mkt return
@@ -13,6 +13,8 @@ default daily, can be monthly}
 \item{winlen}{length rollapply window, default 21 trading days}
 
 \item{mktcol}{string colname of market, default 'SPY'}
+
+\item{intercept}{bool fit the intercept or not}
 }
 \description{
 Rolling apply last residual of reg: ret~ret.mkt

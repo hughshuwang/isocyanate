@@ -22,6 +22,13 @@ regres <- logret %>% RollingRegres(21, 'changep.SPY')
 regres %>% cor %>% round(2) # res not correlated
 pca1 <- prcomp(regres[, 1:9], scale. = TRUE)
 
+rollalpha <- logret %>% RollingAlpha(21, 'changep.SPY')
+rollalpha %>% acf
+  # positive xlb xli xle, material, industrials, and energy
+  # negative xlp & xlk, technology and consumer staples
+  # TODO: negative on lag explanation?
+
+
   # CONCLUSION:
   # for 6 factors: alpha corr around 20, highest 30, some low
   # for 9 sectors: alpha corr on average lower than 10%,

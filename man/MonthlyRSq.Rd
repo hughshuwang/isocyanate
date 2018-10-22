@@ -4,12 +4,14 @@
 \alias{MonthlyRSq}
 \title{Generate monthly R-Squared series from daily returns}
 \usage{
-MonthlyRSq(returns, mktcol = "SPY")
+MonthlyRSq(returns, mktcol = "SPY", intercept = TRUE)
 }
 \arguments{
 \item{returns}{xts dataframe with multiple assets, daily returns}
 
 \item{mktcol}{string of colname of market asset}
+
+\item{intercept}{bool fit the intercept or not}
 }
 \value{
 rsq xts dataframe with yearmon index

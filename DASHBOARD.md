@@ -1,22 +1,19 @@
 ### Dashboard
 
 - **Topics**:
-
-  - [ ] Non-para Inf & Stat Learning: 
+  - [x] Non-para Inf & Stat Learning: 
     - [x] Bootstrap resampling & sampling noise measurement
     - [x] Average shifted histogram (`ASH`)
-    - [ ] Adaptive Gaussian kernel smoothing density (`KernSmooth`)
-      - [ ] Bootstrap std based adaptive radius
-      - [ ] Density based adaptive radius (PENDING)
-      - [ ] Learning algorithm (PENDING, too many hyperparams)
-    - [ ] Fitting CRRA for returns (asymmetric)
-    - [ ] Define distances (Measure for Modeling Risks and differentiating power)
+    - [x] Adaptive Gaussian kernel smoothing density (`KernSmooth`)
+      - [x] *PENDING:* Bootstrap-based/Density-based adaptive radius, Learning algorithm
+    - [x] Fitting CRRA for returns (asymmetric)
+    - [x] Define distances (Measure for Modeling Risks and differentiating power)
     - [x] Hierarchical clustering (diff methods)
   - [ ] Predictive Signals (Forward Looking):
     - [ ] Momentum (systematic and individual/sector)
     - [ ] Volatility clustering (systematic and individual/sector)
-    - [ ] Dynamic factor loadings (individual/sector)
-    - [ ] Alpha dynamics (individual/sector)
+    - [ ] Factor loadings dynamics (individual/sector, Kalman Filter, Regime Identification)
+      - [ ] Alpha dynamics (individual/sector)
     - [ ] Market turbulence (systematic)
     - [ ] Tail risk modeling and forecasts (systematic)
   - [ ] Numerical Simulations:
@@ -25,9 +22,7 @@
     - [ ] Empirical Measure Change (for individual/sector signals)
   - [ ] Single-period Convex Stochastic Control:
     - [ ] Convex risk-adjusted objective functions
-
     - [ ] Convex constraint sets
-
       - [ ] Self financing constraints
       - [ ] Beta constraints for alpha signals
 
@@ -35,24 +30,17 @@
 
 - **Signal Generation and Optimization Pipelines**:
 
-  - `NumericSignal(df::1dxts/2dxts, f::ScoringMethod, period::Int64, dimdf::Number)::1dxts{Number}` 
+  - `NumericSignal(df::1dxts/2dxts, f::ScoringMethod, period::Int64, dimdf::Number)::1dxts{Number}` `
 
-    - in Julia write multiple methods using Multiple Dispatch, rolling window apply embedded
-    - i.e. `NumericSignal(SPYret, IfPositive,)`
-
-  - `BoolSignal(numsignal::1dxts{Number}, ngroup::Number=10, f::DiffMethod, cuts::Vector{Number} = collect(0:0.1:1))::Vector{1dxts{Bool}}` 
-    - Differentiating method, default using cuts to cut empirical quantiles (for continuous signal)
-    - Also a BoolSignal() for binary signal
+  - `BoolSignal(numsignal::1dxts{Number/Binary}, ngroup::Number=10, f::DiffMethod, cuts::Vector{Number} = collect(0:0.1:1))::Vector{1dxts{Bool}}` 
+    - Default using cuts to cut empirical quantiles (for continuous signal)
 
   - `DensityBound(ret::1dxts{Number}, qs::Vector{2, Number})` 
-
     - Generate bounds for density estimation, unify the breaks series obtained by density estimation
 
-  - `EstDensity(idx::1dxts{Bool}, ret::1dxts{Number}, bounds::Vector{2, Number}; rkernel::Number, nbreaks::Number)::Vector/Dict{Number}` 
-    - index not lagged, add more methods in this function to improve the fitting effect, including resampling and adaptive kernel fitting
-    - output density and breaks
+  - `EstDensity(idx::1dxts{Bool}, ret::1dxts{Number}, bounds::Vector{2, Number}; rkernel::Number, nbreaks::Number)::Vector/Dict{Number}` (more adaptive/resampling methods required, index not lagged)
 
-  - `BootBand(idx::1dxts{Bool}, ret::1dxts{Number}, bounds::Vector{2, Number})` # resample 
+  - `BootBand(idx::1dxts{Bool}, ret::1dxts{Number}, bounds::Vector{2, Number})` 
 
   - `NoiseBB(idx::1dxts{Bool}, ret::1dxts{Number}, bounds::Vector{2, Number})`
 
@@ -61,14 +49,7 @@
   - `DistMatrix(boolsignal::Vector{1dxts{Bool}}, est = EstDensity, dis = DensityDist)::Array{2, Number}`
 
   - `HieClustering(dist::Array{2, Number}, ngroup::Int64)::Vector{Vector{Int64}; dthreshold::Number}::Number` 
-
     - Output a number measuring differentiating power, can be the distance, distance should be comparable for all density functions, then to decide whether this signal can be used or not
 
   - Select signal sets (systematic and individual signals) and obtain conditional distributions, copulas, individual measure change for each asset every day.
-
-     
-
-
-
-
 

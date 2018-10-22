@@ -4,7 +4,7 @@
 \alias{RollingBeta}
 \title{Rolling apply fitted beta series of reg: ret~ret.mkt}
 \usage{
-RollingBeta(returns, winlen = 21, mktcol = "SPY")
+RollingBeta(returns, winlen = 21, mktcol = "SPY", intercept = TRUE)
 }
 \arguments{
 \item{returns}{xts df of returns, one column is the mkt return
@@ -13,6 +13,8 @@ default daily, can be monthly}
 \item{winlen}{length rollapply window, default 21 trading days}
 
 \item{mktcol}{string colname of market, default 'SPY'}
+
+\item{intercept}{bool fit the intercept or not}
 }
 \description{
 Rolling apply fitted beta series of reg: ret~ret.mkt
