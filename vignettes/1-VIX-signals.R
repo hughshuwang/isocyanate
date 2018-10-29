@@ -14,21 +14,29 @@ set.seed(12896)
 load("data/sectors.rda")
 period <- "2005/2018"
 
-ret <- log(sec.initset$SPY[, 'changep'] + 1)[period]; VIX.full <- sec.initset$VIX[period]
-risk <- ret %>% rollapply(10, sd, align = 'left'); VIX <- VIX.full[, 'Close']
-VIX.sr <- VIX.full %$% {High - Low} %>% rollapply(5, sum) %>% na.omit # sum of range
-VIX.qv <- VIX.full %$% {abs(Close - Open) + abs(Open - lag.xts(Close))} %>% rollapply(10, sum) %>% na.omit
+# Sectors: defensive: XLV, XLU, aggressive: XLK, XLF
+ret.spy <- log(sec.initset$SPY[, 'changep'] + 1)[period]
+ret.agg <- log(sec.initset$XLF[, 'changep'] + 1)[period]
+ret.def <- log(sec.initset$XLV[, 'changep'] + 1)[period]
 
-vars <- merge(risk, VIX, VIX.sr, VIX.qv) %>% `names<-`(c('Risk', 'VIX', 'VarVIX', 'VarVIX2')) %>% na.omit
-summary(lm(Risk ~ VIX + VarVIX + VarVIX2, data = vars))
-# sub.vars <- vars %$% {vars[VIX > 15]} # summary(lm(Risk ~ VIX + VarVIX + VarVIX2, data = sub.vars))
+VIX.full <- sec.initset$VIX[period]
+VIX <- VIX.full[, 'Close'] %>% `names<-`('VIX')
+VIX.qv <- VIX.full %$% {abs(Close - Open) + abs(Open - lag.xts(Close))} %>% rollapply(10, sum) %>% na.omit %>% `names<-`('VIX.qv')
+VIX.mm <- VIX.full %$% {High - Low} %>% rollapply(5, sum) %>% na.omit %>% `names<-`('VIX.mm') # max-min
+VIX.co <- VIX.full %$% {abs(Close - Open)} %>% rollapply(5, sum) %>% na.omit %>% `names<-`('VIX.co') # abs close-open
+VIX.sr <- (VIX.mm + VIX.co) %>% `names<-`('VIX.sr')
 
-VIX.sr.qt <- quantile(vars$VarVIX, 0.5); VIX.qv.qt <- quantile(vars$VarVIX2, 0.5)
-idx <- vars[(vars$VIX > 10) & (vars$VarVIX > VIX.sr.qt) & (vars$VarVIX2 > VIX.qv.qt)] %>% index
-bin.signal <- ret %>% rollapply(5, function(df) !any(index(df) %in% as.numeric(idx)), by.column = F) %>% lag.xts %>% na.omit
-ret.p <- ret[10:length(ret)] * bin.signal
-GenCoreMetrics(ret, period = 'Daily')[1]; exp(cumsum(ret)) %>% plot(type = 'l')
-GenCoreMetrics(ret.p, period = 'Daily')[1]; exp(cumsum(ret.p)) %>% plot(type = 'l')
-  # Mean         Stdev  Downside Dev        Sharpe       Sortino % of Positive         MaxDD
-  # 7.0276844    19.5725801    20.9341263     0.3590576     0.3357047    54.3378995    53.3291886
-  # 2.8139081     7.4726867    11.5200865     0.3765591     0.2442610    26.1694472    15.2728597
+# Regression tests for rolling risks
+risk <- ret.agg %>% rollapply(10, sd, align = 'left') %>% `names<-`('risk')
+vars <- merge(risk, VIX, VIX.mm, VIX.co, VIX.qv, VIX.sr) %>% na.omit
+# summary(lm(risk ~ VIX.sr, data = vars)) # can add conditions on VIX
+
+idx <- vars[(vars$VIX > 10) & (vars$VIX.sr > quantile(vars$VIX.sr, 0.45))] %>% index
+bin.signal <- ret.spy %>% rollapply(5, function(df) !any(index(df) %in% as.numeric(idx)), by.column = F) %>% lag.xts %>% na.omit
+ret.p <- ret.agg[10:length(ret.agg)] * bin.signal + ret.def[10:length(ret.def)] * !bin.signal
+rbind(GenCoreMetrics(ret.spy, period = 'Daily')[[1]] %>% round(2), GenCoreMetrics(ret.p, period = 'Daily')[[1]] %>% round(2))[, 1:8] %>% `row.names<-`(c('SPY', 'New'))
+  # Sig  Mean Stdev Downside Dev Sharpe Sortino % of Positive MaxDD  Worst
+  # SPY  7.03 19.57        20.93   0.36    0.34         54.34 53.33 -10.16
+  # New 12.10 18.09        18.90   0.67    0.64         55.05 35.44  -6.87
+
+exp(cumsum(ret.p)) %>% plot(type = 'l', ylim = c(0, 6)); exp(cumsum(ret.spy)) %>% lines(col = 'blue')
