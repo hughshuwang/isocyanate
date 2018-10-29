@@ -1,7 +1,7 @@
 ### Dashboard
 
 - **Topics**:
-  - [x] Non-para Inf & Stat Learning: 
+  - [x] Non-para Inf & Stat Learning
     - [x] Bootstrap resampling & sampling noise measurement
     - [x] Average shifted histogram (`ASH`)
     - [x] Adaptive Gaussian kernel smoothing density (`KernSmooth`)
@@ -9,18 +9,18 @@
     - [x] Fitting CRRA for returns (asymmetric)
     - [x] Define distances (Measure for Modeling Risks and differentiating power)
     - [x] Hierarchical clustering (diff methods)
-  - [ ] Predictive Signals (Forward Looking):
-    - [ ] Momentum (systematic and individual/sector)
-    - [ ] Volatility clustering (systematic and individual/sector)
-    - [ ] Factor loadings dynamics (individual/sector, Kalman Filter, Regime Identification)
-      - [ ] Alpha dynamics (individual/sector)
-    - [ ] Market turbulence (systematic)
-    - [ ] Tail risk modeling and forecasts (systematic)
-  - [ ] Numerical Simulations:
+  - [ ] Predictive Signals (Forward Looking)
+    - [ ] Momentum/Mean Reverting (systematic and individual/sector)
+    - [ ] Volatility clustering (general volatility modeling, systematic and individual/sector)
+    - [ ] Market turbulence (both side moderate fluctuation modeling, systematic)
+    - [ ] Tail risk modeling and forecasts (extreme downside collapse modeling, systematic)
+    - [ ] Factor loadings/Alpha dynamics (individual/sector, Kalman Filter, Regime Identification)
+    - [ ] Other Market variable (VIX, IG & HY OAS, etc.)
+  - [ ] Numerical Simulations
     - [x] Multi-asset T-Copulas for better tail risk fits (for systematic signals)
     - [ ] Conditional correlation structure measurement
     - [ ] Empirical Measure Change (for individual/sector signals)
-  - [ ] Single-period Convex Stochastic Control:
+  - [ ] Single-period Convex Stochastic Control
     - [ ] Convex risk-adjusted objective functions
     - [ ] Convex constraint sets
       - [ ] Self financing constraints
