@@ -5,7 +5,9 @@
 #' @param inits initial weights of the portfolio
 #' @param asset.ret xts object of returns of assets traded in the portfolio
 #' @param name.bmk string the name for the strategy we're interested in
+#' @param alt.bmk xts object alternative benchmark signal for getting relative perf
 #' @return metric dataframe
+#' @importFrom magrittr %>%
 #' @description
 #'   plotting example:
 #'   metrics.random <- PermMetrics(signal.hybrid, 5000, inits = c(0, 0.34/0.49), asset.ret, 'hybrid')
@@ -15,25 +17,17 @@
 #' @export
 PermMetrics <- function(signal.bmk, n = 5000,
                         inits = c(0, 0.34/0.49),
-                        asset.ret, name.bmk) {
+                        asset.ret, name.bmk, alt.bmk) {
   random.signals <- c(list(signal.bmk), lapply(1:n, function(i) {
     cbind(sample(as.vector(signal.bmk[, 1]), dim(signal.bmk)[1]),
           sample(as.vector(signal.bmk[, 2]), dim(signal.bmk)[1])) %>%
       xts::xts(zoo::index(signal.bmk)) %>% `colnames<-`(c('DM', 'EM'))
   }))
 
-  # Alternative for sampling index and set as 1, work for binary signal, case included in the general case
-  # random.signals <- c(list(signal.hybrid), lapply(1:n, function(i) {
-  #   signal.tmpdm <- signal.zero; signal.tmpem <- signal.zero
-  #   signal.tmpdm[sample(1:dim(signal.hybrid)[1], colSums(signal.hybrid)[1], replace = F)] <- 1
-  #   signal.tmpem[sample(1:dim(signal.hybrid)[1], colSums(signal.hybrid)[2], replace = F)] <- 1
-  #   signal.random <- cbind(signal.tmpdm, signal.tmpem) %>% `colnames<-`(c('DM', 'EM'))
-  #   stopifnot(all(dim(signal.random) == dim(signal.hybrid)) && all(colSums(signal.random) == colSums(signal.hybrid)))
-  #   signal.random
-  # })) # the first one is the hybrid signal
-
+  alt.ws <- GenWeights(list(alt.bmk), 'DE', inits, asset.ret); alt.ret <- GenTrets(alt.ws, asset.ret, "Monthly")[[1]]
   weights <- GenWeights(random.signals, 'DE', inits, asset.ret); trets <- GenTrets(weights, asset.ret, "Monthly")
-  GenOutputs(weights, trets, asset.ret, "Monthly", c(name.bmk, as.character(1:n)))[[1]] # report the huge metrix
+
+  GenOutputs(weights, trets, asset.ret, "Monthly", c(name.bmk, as.character(1:n)), alt.ret)[[1]] # report the huge metrix
 }
 
 
@@ -120,14 +114,14 @@ GenTrets <- function(weights, # obtained by GenWeights
 #' @export
 GenOutputs <- function(weights, trets,
                        returns, returns.period = c("Monthly", "Daily"),
-                       signal.names) {
+                       signal.names, bmk.ret = trets[[1]]) {
 
-  raw.outputs <- lapply(trets, GenCoreMetrics, benchmark.ret = trets[[1]], period = returns.period) # pnl and metrics
+  raw.outputs <- lapply(trets, GenCoreMetrics, benchmark.ret = bmk.ret, period = returns.period) # pnl and metrics
   twoway.to <- weights %>% lapply(GenTurnover, returns = returns) %>% unlist # turnovers
   avgw.us <- weights %>% lapply(function(df) colMeans(df)['SPY']) %>% unlist # average SPY weights
 
   metrics <- do.call(cbind, lapply(raw.outputs, function(l) l[[1]])) %>% rbind(twoway.to * 100, avgw.us * 100)
-  n <- nrow(metrics); rownames(metrics)[c(n-1, n)] <- c("Avg Turnover", "Avg SPY Weights")
+  n <- nrow(metrics); rownames(metrics)[c(n-1, n)] <- c("Avg Turnover", "Avg SPY Alloc")
 
 
   pnls <- do.call(cbind, lapply(raw.outputs, function(l)l[[2]]))
@@ -198,6 +192,7 @@ GenCoreMetrics <- function(total.ret,
                'Downside Dev' = dn.dev * 100,
                'Sharpe' = sharpe,
                'Sortino' = sortino,
+               'Obj' = (m - sd/2) * 100,
                '% of Positive' = positive.pctg * 100,
                'MaxDD' = maxDD * 100,
                'Worst' = worst.ret * 100,

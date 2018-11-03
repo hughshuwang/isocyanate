@@ -60,7 +60,7 @@ GenCondGroups <- function(ret, bools) {
 GenBoolSignal <- function(signal, n.group = 10, cuts = seq(0, 1, 1/n.group)) {
   stopifnot(range(signal)[1] >= 0 && range(signal)[2] <= 1)
   lapply(1:n.group, function(i) {
-    (signal < cuts[i+1] & signal >= cuts[i]) %>% xts::xts(zoo::index(signal)) %>% xts::lag.xts(1) # lag NOW!
+    (signal < cuts[i+1] & signal >= cuts[i]) %>% xts::xts(zoo::index(signal))
   }) # bool 2d signals with same index as the numeric signal and MIGHT HAVE NAs
 }
 
@@ -256,7 +256,6 @@ MonthlyRegres <- function(returns, mktcol = "SPY", intercept = TRUE) {
 }
 
 
-
 #' Rolling apply fitted beta series of reg: ret~ret.mkt
 #'
 #' @param returns xts df of returns, one column is the mkt return
@@ -346,7 +345,6 @@ RollingRegres <- function(returns,
     }, mkt = df[, mktcol]
     )}, by.column = F) %>% na.omit
 }
-
 
 
 #' Generate vectorized var/cov dataframe from individual log returns
@@ -506,10 +504,7 @@ GenEmpQuantileVec <- function(vec) {
 #'
 #' @export
 GenEmpQuantile <- function(df) {
-  apply(df, 2, function(vec) {
-    stats::ecdf(vec)(vec[length(vec)])
-    # Note: continuous property, the min doesn't equal to 0
-  })
+  apply(df, 2, function(vec) {vec %>% {stats::ecdf(.)(.[length(.)])} })
 }
 
 
