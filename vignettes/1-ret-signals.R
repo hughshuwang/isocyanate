@@ -35,9 +35,8 @@ asym3m <- ret.spy %>% zoo::rollapply(21, function(x) sd(x[x < 0]) - sd(x[x > 0])
 # CONC: alphas have high auto-corr, low cross-sectional auto-corr  # CONC: should model alpha shocks
 # TODO: build a list of signals, using pack and same naming convention
 
-signal <- asym1m; target <- ret.xlk %>% xts::lag.xts(-1)
-
-bools <- signal %>% GenBoolSignal(n.group = 9) # cuts = c(0, 1/10, 3/10, 0.5, 1-3/10, 1-1/10, 1))
+signal <- list(asym1m); target <- ret.xlk %>% xts::lag.xts(-1)
+bools <- signal %>% lapply(function(signal) signal %>% GenBoolSignal(n.group = 9)) # cuts = c(0, 1/10, 3/10, 0.5, 1-3/10, 1-1/10, 1))
 groups <- target %>% na.omit %>% CutSeriesQuantile %>% GenCondGroups(bools) # lapply(., function(x) hist(x, breaks = 200, xlim = c(-0.1, 0.1)))
 dens <- GenBKDE(groups, bw = 0.002, gs = 128) # dens %>% lapply(., function(x) plot(x, type = 'l'))
 # TODO: get the index out at the same time, each density should have 2 columns, then to double check
