@@ -5,7 +5,7 @@
 \title{Generate metrics dataframe for permutation resampling}
 \usage{
 PermMetrics(signal.bmk, n = 5000, inits = c(0, 0.34/0.49), asset.ret,
-  name.bmk)
+  name.bmk, alt.bmk)
 }
 \arguments{
 \item{signal.bmk}{xts object, signal with DE rep}
@@ -17,6 +17,8 @@ PermMetrics(signal.bmk, n = 5000, inits = c(0, 0.34/0.49), asset.ret,
 \item{asset.ret}{xts object of returns of assets traded in the portfolio}
 
 \item{name.bmk}{string the name for the strategy we're interested in}
+
+\item{alt.bmk}{xts object alternative benchmark signal for getting relative perf}
 }
 \value{
 metric dataframe

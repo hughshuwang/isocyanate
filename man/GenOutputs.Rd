@@ -5,7 +5,7 @@
 \title{Generate complete outputs for a pack of signals (weights and total returns), assumed first bmk}
 \usage{
 GenOutputs(weights, trets, returns, returns.period = c("Monthly",
-  "Daily"), signal.names)
+  "Daily"), signal.names, bmk.ret = trets[[1]])
 }
 \arguments{
 \item{weights}{a list of xts dataframes, representing weights time series, generated
