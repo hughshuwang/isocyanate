@@ -17,8 +17,7 @@ library(zoo)
 
 set.seed(12896)
 
-# load("data/factors.rda")
-load("data/sectors.rda")
+load("../data/sectors.rda")
 logret <- log(sec.varset$changep + 1)
 
 # Inspect alpha: estimate corr effect ----

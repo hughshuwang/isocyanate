@@ -50,33 +50,6 @@ CleanSubset <- function(var.list) {
 }
 
 
-#' Transfer a xts object to a tibble with date (yearmon/date)
-#'
-#' @param x xts series, default monthly
-#' @param date.range a vector of upper and lower limit,
-#'   example for monthly data: "Jan 2010/Jan 2017"
-#' @return subsetted tibble dataframe
-#' @importFrom magrittr %>%
-#' @export
-tibbleXTS <- function(x, date.range = NULL) {
-  # stopifnot(xts::periodicity(x)$scale == "monthly") # can only take monthly for now
-  tbl <- dplyr::as_tibble(x) %>% mutate(date = zoo::index(x)) %>% select(c(ncol(x)+1, 1:ncol(x)))
-
-  # manipulate date.range string for subsetting
-  if (!is.null(date.range)) { # if date.range is passed
-    date.range <- strsplit(date.range, split = "/")[[1]]
-
-    if (all(lapply(date.range, nchar) %>% unlist == 4)) {
-      date.range <- date.range %>% purrr::map(as.yearmon.default) %>% do.call(c, .)
-    } # if in year format, 4 digits,
-
-    tbl <- tbl %>% filter(tbl$date >= date.range[1] & tbl$date <= date.range[2])
-  }
-
-  tbl
-}
-
-
 #' Get a DataFrame for one variable given list of symbols and dates
 #'
 #' @param symbol.list vector of string

@@ -8,9 +8,7 @@ library(stats)
 library(zoo)
 library(readr)
 
-setwd("/home/hugh/isocyanate")
-
-VIX <- read_csv("./data-raw/VIX.csv", na = 'n/a') %>% na.omit %>%
+VIX <- read_csv("../data-raw/VIX.csv", na = 'n/a') %>% na.omit %>%
   {xts::xts(.[, 2:ncol(.)], as.Date(as.character(.$Date), "%m/%d/%y"))}
 
 columns <- c('open', 'high', 'low', 'close', 'adjclose', 'changed', 'changep', 'volume')
@@ -24,10 +22,10 @@ sectors <- c("XLB", "XLI", "XLY", "XLP", "XLE", "XLF", "XLU", "XLV", "XLK", "SPY
 sec.initset <- GenInitSet(sectors, columns, as.Date("1998-01-01"), list('VIX' = VIX)) # 4283, approx 20 years
 sec.varset <- GenVarSet(columns, sec.initset, sectors)
 
-save(fac.initset, fac.varset, file = "./data/factors.rda")
-save(sec.initset, sec.varset, file = ",.data/sectors.rda")
+save(fac.initset, fac.varset, file = "../data/factors.rda")
+save(sec.initset, sec.varset, file = "../data/sectors.rda")
 
-fac.initset$SPY %>% tibbleXTS %>% write_csv('./data-raw/SPY.csv')
+fac.initset$SPY %>% tibbleXTS %>% write_csv('../data-raw/SPY.csv')
 
 # COMMENTS:
 # `initset` has all time series including tradable assets and indicators, each element is an asset or indicator

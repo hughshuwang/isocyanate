@@ -10,7 +10,7 @@ library(stats)
 library(xts)
 
 set.seed(12896)
-load("data/sectors.rda")
+load("./data/sectors.rda")
 period <- "2005/2018"
 
 # Sectors: defensive: XLV, XLU, XLP, aggressive: XLK, XLF

@@ -1,5 +1,3 @@
-# STANDARD EDE-BASED ALPHA SIGNAL RESEARCH PROCEDURE #
-
 rm(list = ls())
 
 library(ash)
@@ -16,15 +14,16 @@ library(VineCopula)
 library(zoo)
 
 set.seed(12896)
-load("data/sectors.rda")
+load("../data/sectors.rda")
 logret <- log(sec.varset$changep + 1)
- 1
+
 regres <- logret %>% RollingRegres(21, 'changep.SPY')
 regres %>% cor %>% round(2) # res not correlated
 pca1 <- prcomp(regres[, 1:9], scale. = TRUE)
 
 rollalpha <- logret %>% RollingAlpha(21, 'changep.SPY')
-rollalpha %>% acf
+acf.outputs <- rollalpha %>% acf
+acf.outputs$changep.XLI
 
   # positive xlb xli xle, material, industrials, and energy
   # negative xlp & xlk, technology and consumer staples
@@ -41,7 +40,8 @@ rollalpha %>% acf
   # good.idx <- good.idx[zoo::index(alphas)]
   # par(mfrow = c(3, 2))
   # for (i in 1:6) {
-  #   hist(alphas[good.idx, i], breaks = 200, main = colnames(alphas)[i], xlim = c(-0.02, 0.02))
+  #   hist(alphas[good.idx, i], breaks = 200, 
+  #   main = colnames(alphas)[i], xlim = c(-0.02, 0.02))
   #   # for each one, do a smooth density and plot it in the plot
   #   # look at the distribution and determine the properties
   #   # monitor the sample size

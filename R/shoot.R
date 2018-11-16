@@ -1,3 +1,34 @@
+#' Generate conditional groups based on bool signals and a variable/return xts
+#'
+#' @param ret xts variable/return
+#' @param bools a 2d xts bool, Vector{1dxts{bool}}
+#' @return a list of 1dxts, same size as bools
+#' @importFrom magrittr %>%
+#' @export
+GenCondGroups <- function(ret, bools) {
+  lapply(bools, function(bool) {xts::merge.xts(ret, bool) %>% stats::na.omit() %>%
+      `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}})
+}
+
+
+#' Generate bool signal vector for a given continuous 0-1 (quantile) signal
+#'
+#' @param signal xts numerical from 0 to 1, i.e. from GenEmpQuantileVec
+#' @param n.group int number of groups divided
+#' @param cuts vector of number used to divide groups
+#' @examples
+#'   GenBoolSignal(quantiles, 6, cuts = c(0, 1/10, 3/10, 0.5, 1-3/10, 1-1/10, 1))
+#'   GenBoolSignal(quantiles, 10)
+#' @importFrom magrittr %>%
+#' @export
+GenBoolSignal <- function(signal, n.group = 10, cuts = seq(0, 1, 1/n.group)) {
+  stopifnot(range(signal)[1] >= 0 && range(signal)[2] <= 1)
+  lapply(1:n.group, function(i) {
+    (signal < cuts[i+1] & signal >= cuts[i]) %>% xts::xts(zoo::index(signal))
+  }) # bool 2d signals with same index as the numeric signal and MIGHT HAVE NAs
+}
+
+
 #' Generate Bootstrap Band for KernSmooth
 #'
 #' @param groups conditional variable series from GenCondGroups
