@@ -1,3 +1,23 @@
+#' Generate Top 3 Heights, shooting a bullet 
+#' 
+#' @param bullet,target xts time series object, might have diff period  
+#' @param n.top int number of top heighs required for the report
+#' @return vector of top heights using the bullet hitting the target
+#' @importFrom magrittr %>%
+#' @export
+GenHeights <- function(bullet = asym1m, target = ret.xlk %>% lag.xts(-1), n.top = 3) {
+  bools <- bullet %>% GenBoolSignal(n.group = 9) # cuts = c(0, 1/10, 3/10, 0.5, 1-3/10, 1-1/10, 1))
+  groups <- target %>% na.omit %>% CutSeriesQuantile %>% GenCondGroups(bools) 
+  fitted.bkde <- GenBKDE(groups, bw = 0.002, gs = 128); dens <- fitted.bkde$dens; axis <- fitted.bkde$axis
+  # bbands <- GenBKDEBand(groups, bw = 0.003, n = 1000); bbnoise <- lapply(bbands, function(df) df[, 2] - df[, 1]) 
+
+  hc <- sapply(1:length(groups), function(i) {sapply(1:length(groups), function(j) {DistUR(dens, i, j, axis)})}) %>% 
+      as.dist %>% {hclust(.*100, method = "average")}
+  # png(file = "./images/tmp.png", bg = "white"); plot(hc); dev.off()
+  hc$height %>% {.[(length(.) - (n.top - 1)):length(.)]}
+}
+
+
 #' Generate conditional groups based on bool signals and a variable/return xts
 #'
 #' @param ret xts variable/return
@@ -82,11 +102,13 @@ GenASHBand <- function(groups, nbin = 128, n = 1000, pctg = 0.8) {
 #' @import KernSmooth
 #' @export
 GenBKDE <- function(groups, bw = 0.003, gs = 128L, range = NULL) { # how to tune?
-  lapply(groups, function(group) {
-    if (is.null(range)) {range <- range(groups)}
-    bkde(group, "normal", FALSE, bw, gs, range)$y %>%
-      {./sum(.)}
-  })
+  if (is.null(range)) {range <- range(groups)} # use range in a whole
+  list(
+    "dens" = lapply(groups, function(group) { 
+        bkde(group, "normal", FALSE, bw, gs, range)$y %>% {./sum(.)}
+    }),
+    "axis" = bkde(groups[[1]], "normal", FALSE, bw, gs, range)$x
+  )
 }
 
 
@@ -128,5 +150,5 @@ DistSQ <- function(dens, i, j) {sum((dens[[i]] - dens[[j]]) ^ 2)}
 DistUR <- function(dens, i, j, idx, gamma = 0.6) {
   U <- seq(1, length(dens[[1]])) %>% {(.^(1-gamma)-1)/(1-gamma)}
   R <- U %>% {abs(.-.[which.min(abs(idx))]) %>% {./sum(.)}}
-  sum((dens[[i]] - dens[[j]]) * R)
+  sum((dens[[i]] - dens[[j]]) ^ 2 * R)
 } # adjusted measure for distance, give more weights to tail, and consider asymmetry
