@@ -1,3 +1,23 @@
+#' Forge a dataframe of bullets with proper colnames
+#' 
+#' @param core xts series, core time series for forging
+#' @param name.core string, at the beginning of colnames
+#' @param funcs list of functions with all lower names
+#' @param periods list of rolling period applied with all lower names
+#' @return dataframe without NA, properly named
+#' @importFrom magrittr %>% 
+#' @export
+ForgeBullets <- function(core, name.core, funcs, periods) {
+  names <- lapply(seq_along(funcs), function(i) {lapply(seq_along(periods), function(j) {
+    paste(name.core, names(funcs)[i], names(periods)[j], sep = ".")
+  })}) %>% unlist
+  lapply(seq_along(funcs), function(i) {lapply(seq_along(periods), function(j) {
+    core %>% rollapply(periods[[j]], funcs[[i]]) %>% na.omit %>% GenEmpQuantileVec 
+  })}) %>% unlist(recursive = FALSE) %>% {do.call(cbind,.)} %>% `colnames<-`(names) %>% na.omit
+}
+
+
+
 #' Mixing a pack of signal with a single benchmark signal (i.e. DRI)
 #'
 #' @param pack a list of signals for DM/EM both, 2 columns, properly named
