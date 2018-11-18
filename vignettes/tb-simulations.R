@@ -53,8 +53,8 @@ groups.xlf <- lapply(bools, function(bool) {
     `colnames<-`(c('ret', 'idx')) %>% {.$ret[.$idx != 0]}
 })
 
-  # NOTE: do not cut the signal using 0.1% quantiles here, match multiassets
-  # groups.xlk %>% lapply(dim); groups.xly %>% lapply(dim) # should be identical
+# NOTE: do not cut the signal using 0.1% quantiles here, match multiassets
+# groups.xlk %>% lapply(dim); groups.xly %>% lapply(dim) # should be identical
 
 # Copula simulation: https://datascienceplus.com/modelling-dependence-with-copulas/
 i <- 1 # the first condition

@@ -1,20 +1,19 @@
-#' Generate Top 3 Heights, shooting a bullet 
+#' Generate HC results for Shooting a Bullet for a Target
 #' 
 #' @param bullet,target xts time series object, might have diff period  
-#' @param n.top int number of top heighs required for the report
-#' @return vector of top heights using the bullet hitting the target
+#' @return HC results
 #' @importFrom magrittr %>%
 #' @export
-GenHeights <- function(bullet = asym1m, target = ret.xlk %>% lag.xts(-1), n.top = 3) {
+GenHC <- function(bullet, target) {
   bools <- bullet %>% GenBoolSignal(n.group = 9) # cuts = c(0, 1/10, 3/10, 0.5, 1-3/10, 1-1/10, 1))
   groups <- target %>% na.omit %>% CutSeriesQuantile %>% GenCondGroups(bools) 
   fitted.bkde <- GenBKDE(groups, bw = 0.002, gs = 128); dens <- fitted.bkde$dens; axis <- fitted.bkde$axis
   # bbands <- GenBKDEBand(groups, bw = 0.003, n = 1000); bbnoise <- lapply(bbands, function(df) df[, 2] - df[, 1]) 
 
-  hc <- sapply(1:length(groups), function(i) {sapply(1:length(groups), function(j) {DistUR(dens, i, j, axis)})}) %>% 
+  sapply(1:length(groups), function(i) {sapply(1:length(groups), function(j) {DistUR(dens, i, j, axis)})}) %>% 
       as.dist %>% {hclust(.*100, method = "average")}
   # png(file = "./images/tmp.png", bg = "white"); plot(hc); dev.off()
-  hc$height %>% {.[(length(.) - (n.top - 1)):length(.)]}
+  # hc$height %>% {.[(length(.) - (n.top - 1)):length(.)]}
 }
 
 
