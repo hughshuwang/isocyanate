@@ -1,7 +1,6 @@
 # isocyanate <img src="images/icon.png" align="right" width="200"/>
 
 **R Package for Project [`isocyanate (R-N=C=O)`](https://en.wikipedia.org/wiki/Isocyanate)**  
-**Formal Name:** Non-parametric Portfolio Optimization Framework based on Disciplined Convex Programming  
 **Author:** Shu Wang (hugh.shu.wang@gmail.com)  
 **Created:** October 2018  
 
