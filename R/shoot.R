@@ -1,3 +1,35 @@
+#' Generate Binary Shrinked HC Clusters
+#'
+#' @param merge matrix from hclust, hc$merge
+#' @return a list of 2 vectors, showing subgroups in shrinked groups
+#' @importFrom magrittr %>%
+#' @export
+GenBinShHC <- function(merge) {
+  n <- nrow(merge)
+  sh.list <- as.list(merge[n,])
+  while(!all(unlist(sh.list) < 0)) {
+    sh.list <- sh.list %>% lapply(function(x) {
+      lapply(x, function(x) ifelse(x>0, list(merge[x,]), list(x))) %>% unlist
+    })
+  }
+  lapply(sh.list, function(vec) -vec)
+}
+
+
+#' Generate Binary Shrinked Groups' Densities
+#'  
+#' @param dens list of densities of subgroups
+#' @param shlist list of shrinked groups, from GenBinShHC
+#' @return list of densities in shrinked groups (default 2)
+#' @importFrom magrittr %>%
+#' @export
+GenBinShDens <- function(dens, shlist) {
+  lapply(seq_along(shlist), function(i) {
+    dens[shlist[[i]]] %>% {colMeans(do.call(rbind, .))}
+  })
+}
+
+
 #' Generate HC results for Shooting a Bullet for a Target
 #' 
 #' @param bullet,target xts time series object, might have diff period  
