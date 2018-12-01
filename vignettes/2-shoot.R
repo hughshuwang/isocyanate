@@ -1,9 +1,10 @@
-# CORR MODELING AND COPULA SIMULATIONS #
+# CORR MODELING, COPULA SIMULATIONS, AND DCP #
 
 rm(list = ls())
 
 library(ash)
 library(copula)
+library(CVXR)
 library(dplyr)
 library(isocyanate)
 library(KernSmooth)
@@ -28,6 +29,8 @@ bullets <- lapply(1:ncol(ret), function(i)
   ForgeBullets(ret[, i], colnames(ret)[i], funcs, periods)) %>%
   `names<-`(colnames(ret))
 
+asset.tickers <- c('XLK', 'XLY', 'XLF')
+
 # Correlation Structure Bools
 shlists <- 1:ncol(ret) %>% lapply(function(i) {
   shlist <- bullets$SPY %>%
@@ -45,12 +48,13 @@ bools.cm <- lapply(1:length(shlist), function(i) bools.cm[shlist[[i]]] %>%
 
 tcops <- lapply(1:length(bools.cm), function(i) {
   # REF: https://datascienceplus.com/modelling-dependence-with-copulas/
-  cond.rets <- ret[, c('XLK', 'XLY', 'XLF')] %>%
+  cond.rets <- ret[, asset.tickers] %>%
     lapply(GenCondGroups, bools=bools.cm) %>%
     lapply(function(x) x[[i]]) %>% do.call(cbind, .) %>%
-    `colnames<-`(c("XLK", "XLY", "XLF"))
-  cond.qtls <- lapply(1:ncol(cond.rets), function(i) GenEmpQuantileVec(cond.rets[, i])) %>%
-    Reduce(xts::merge.xts, .) %>% `colnames<-`(c("XLK", "XLY", "XLF")) # conditional quantiles
+    `colnames<-`(asset.tickers)
+  cond.qtls <- lapply(1:ncol(cond.rets), function(i)
+    GenEmpQuantileVec(cond.rets[, i])) %>%
+    Reduce(xts::merge.xts, .) %>% `colnames<-`(asset.tickers) # conditional quantiles
   cond.pobs <- VineCopula::pobs(as.matrix(cond.rets)) # conditional pobs
   # scatter.smooth(cond.qtls[, 1], cond.qtls[, 2])
 
@@ -68,7 +72,7 @@ tcops <- lapply(1:length(bools.cm), function(i) {
   tcop
 })
 
-
+# TODO: pack up in shoot.R
 GenShBool <- function(bullet, target) {
   shlist <- bullet %>% GenHC(target) %>% {GenBinShHC(.$merge)}
   bools <- bullet %>% GenBoolSignal(n.group = 9)
@@ -78,41 +82,52 @@ GenShBool <- function(bullet, target) {
 
 bools.ind.XLK <- GenShBool(bullets$XLK$XLK.mom.3m, ret$XLK %>% lag.xts(-1))
 ddens.ind.XLK <- bools.ind.XLK %>% GenCondGroups(ret$XLK, .) %>%
-  GenBKDE %>% {(.$dens[[1]] - .$dens[[2]])/2}
+  GenBKDE %>% {(.$dens[[1]] - .$dens[[2]])/2} %>% {list(., 0 * .)}
 da.cm.XLK <- bools.cm %>% GenCondGroups(ret$XLK, .) %>% GenBKDE
 
 bools.ind.XLY <- GenShBool(bullets$XLY$XLY.mom.3m, ret$XLY %>% lag.xts(-1))
 ddens.ind.XLY <- bools.ind.XLY %>% GenCondGroups(ret$XLY, .) %>%
-  GenBKDE %>% {(.$dens[[1]] - .$dens[[2]])/2}
-da.cm.XLY <- bools.cm %>% GenCondGroups(ret$XLY, .) %>% GenBKDE %>% {.$dens}
+  GenBKDE %>% {(.$dens[[1]] - .$dens[[2]])/2} %>% {list(., 0 * .)}
+da.cm.XLY <- bools.cm %>% GenCondGroups(ret$XLY, .) %>% GenBKDE
 
 bools.ind.XLF <- GenShBool(bullets$XLF$XLF.mom.3m, ret$XLF %>% lag.xts(-1))
 ddens.ind.XLF <- bools.ind.XLF %>% GenCondGroups(ret$XLF, .) %>%
-  GenBKDE %>% {(.$dens[[1]] - .$dens[[2]])/2}
+  GenBKDE %>% {(.$dens[[1]] - .$dens[[2]])/2} %>% {list(., 0 * .)}
 da.cm.XLF <- bools.cm %>% GenCondGroups(ret$XLF, .) %>% GenBKDE
 
-states <- list(bools.ind.XLK, bools.ind.XLB, bools.ind.XLF, bools.cm) %>%
+states <- list(bools.ind.XLK, bools.ind.XLY, bools.ind.XLF, bools.cm) %>%
   lapply(function(x) x[[2]]) %>% do.call(cbind, .) %>%
-  `colnames<-`(c('XLK', 'XLB', 'XLF', 'common')) * 1 + 1
+  `colnames<-`(c(asset.tickers, 'common')) * 1 + 1
 
+lapply(1:3, function(i) {
+  day <- index(states)[i]
+  tcop <- tcops[[states[day, 'common']]]
+  u <- rCopula(5000, tcop)
+  das.cm <- list(da.cm.XLK, da.cm.XLY, da.cm.XLF)
+  ddens <- list(ddens.ind.XLK, ddens.ind.XLY, ddens.ind.XLF)
 
-da.cm.XLF$axis[sum(cumsum(da.cm.XLF$dens[[1]]) < u)]
+  sims <- lapply(1:ncol(u), function(n) {
+    dens.cm <- das.cm[[n]]$dens[[states[day, 'common']]]
+    dens.adj <- ddens[[n]][[states[day, 'XLK']]]
+    dens <- (dens.cm + dens.adj) %>% {./sum(.)}
+    axis <- das.cm[[n]]$axis
+    sapply(u[, 1], function(i) {
+      sum(cumsum(dens) < i) %>% {min(axis)+(max(axis)-min(axis))/length(axis)*.}
+    })
+  }) %>% do.call(cbind, .) %>% `colnames<-`(asset.tickers)
 
-# list(bullets$SPY, bullets$XLF, bullets$XLI, bullets$XLK, bullets$XLV, bullets$XLY) %>% {do.call(cbind, .)}
-# bools <- GenBoolSignal(bullets.spy$`spy.mom.3m`, 9)
-# dens <- bools %>% {GenCondGroups(ret.xlk %>% lag.xts(-1), .)} %>% GenBKDE
-# sh.dens <- dens$dens %>% GenBinShDens(shlist.spy.xlk$`spy.mom.3m`) # shrinked group densities
+  mu <- colMeans(sims); sigma <- cov(sims)
+  dsigma <- cov(sims[apply(sims < 0, 1, all), ])
 
-u <- rCopula(50000, tcop) # get copula simulations
-# plot(u[, 1], u[, 3], pch='.', col='blue'); cor(u, method='spearman')
-sim <- lapply(1:ncol(u), function(i){
-  as.vector(sapply(u[, i], function(x) quantile(cond.rets[, i], x)))
-  # TODO: use different adjusted conditional returns
-}) %>% do.call(cbind, .)
+  w0 <- c(0,0,0,1) # plus cash, full cash first
+  z <- Variable(ncol(sims)+1)
 
-par(mfrow = c(3, 1))
-for (i in 1:3) {cond.rets[, i] %>% hist(breaks = 300)}
-for (i in 1:3) {sim[, i] %>% hist(breaks = 300)}
+  obj <- - t(w0+z)[1:3] %*% mu + 0.5 * quad_form((w0+z)[1:3], dsigma) # convex
+  netout <- sum_entries(z)
+  consts <- list(w0+z >= 0, w0+z <= 1, netout == 0)
+  prob <- Problem(Minimize(obj), consts)
+  result <- tryCatch({solve(prob)}, error = function(e) {print(e)})
+  t(result$getValue(z) %>% round(3))
+}) %>% {do.call(rbind, .)}
 
-write.table(sim, file = "./data-raw/sample.csv", col.names = F, row.names = FALSE, sep=',')
-  # write.csv will include colnames
+# TODO: wrapup as a solver function
