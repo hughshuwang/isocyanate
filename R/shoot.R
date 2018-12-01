@@ -3,8 +3,6 @@
 #' @param tmp list of vectors representing group info
 #' @return matrix showing pair-wise group/list info
 #' @importFrom magrittr %>%
-#' @example
-#'   tmp <- list(c(1,2,8), c(3,4,5), c(6,7), c(9))
 #' @export
 ShlistToGroupMat <- function(tmp) {
   lapply(1:9, function(ele) {
