@@ -1,3 +1,33 @@
+#' Trans Shrinked List to Group Matrix
+#'
+#' @param tmp list of vectors representing group info
+#' @return matrix showing pair-wise group/list info
+#' @importFrom magrittr %>%
+#' @example
+#'   tmp <- list(c(1,2,8), c(3,4,5), c(6,7), c(9))
+#' @export
+ShlistToGroupMat <- function(tmp) {
+  lapply(1:9, function(ele) {
+    lapply(1:length(tmp), function(i) ele %in% tmp[[i]])
+      1:9 %in% tmp[lapply(1:length(tmp), function(i)
+        {ele %in% tmp[[i]]}) %>% unlist][[1]]
+  }) %>% {do.call(rbind, .)} * 1
+}
+
+
+#' Trans Group Matrix to Shrinked List
+#'
+#' @param matrix showing pair-wise group/list info
+#' @return shrinked list of vectors
+#' @importFrom magrittr %>%
+#' @export
+GroupMatToShlist <- function(mat) {
+  apply(mat, 2, function(vec) {
+    (1:9)[as.logical(vec)]
+  }) %>% unique
+}
+
+
 #' Generate Binary Shrinked HC Clusters
 #'
 #' @param merge matrix from hclust, hc$merge
@@ -17,7 +47,7 @@ GenBinShHC <- function(merge) {
 
 
 #' Generate Binary Shrinked Groups' Densities
-#'  
+#'
 #' @param dens list of densities of subgroups
 #' @param shlist list of shrinked groups, from GenBinShHC
 #' @return list of densities in shrinked groups (default 2)
@@ -31,19 +61,22 @@ GenBinShDens <- function(dens, shlist) {
 
 
 #' Generate HC results for Shooting a Bullet for a Target
-#' 
-#' @param bullet,target xts time series object, might have diff period  
+#'
+#' @param bullet,target xts time series object, might have diff period
 #' @return HC results
 #' @importFrom magrittr %>%
 #' @export
 GenHC <- function(bullet, target) {
   bools <- bullet %>% GenBoolSignal(n.group = 9) # cuts = c(0, 1/10, 3/10, 0.5, 1-3/10, 1-1/10, 1))
-  groups <- target %>% na.omit %>% CutSeriesQuantile %>% GenCondGroups(bools) 
-  fitted.bkde <- GenBKDE(groups, bw = 0.002, gs = 128); dens <- fitted.bkde$dens; axis <- fitted.bkde$axis
-  # bbands <- GenBKDEBand(groups, bw = 0.003, n = 1000); bbnoise <- lapply(bbands, function(df) df[, 2] - df[, 1]) 
+  groups <- target %>% na.omit %>% CutSeriesQuantile %>% GenCondGroups(bools)
+  fitted.bkde <- GenBKDE(groups, bw = 0.002, gs = 128)
+  dens <- fitted.bkde$dens
+  axis <- fitted.bkde$axis
+  # bbands <- GenBKDEBand(groups, bw = 0.003, n = 1000); bbnoise <- lapply(bbands, function(df) df[, 2] - df[, 1])
 
-  sapply(1:length(groups), function(i) {sapply(1:length(groups), function(j) {DistUR(dens, i, j, axis)})}) %>% 
-      as.dist %>% {hclust(.*100, method = "average")}
+  sapply(1:length(groups), function(i) {sapply(1:length(groups), function(j)
+    {DistUR(dens, i, j, axis)})}) %>% as.dist %>%
+    {hclust(.*100, method = "average")}
   # png(file = "./images/tmp.png", bg = "white"); plot(hc); dev.off()
   # hc$height %>% {.[(length(.) - (n.top - 1)):length(.)]}
 }
@@ -135,7 +168,7 @@ GenASHBand <- function(groups, nbin = 128, n = 1000, pctg = 0.8) {
 GenBKDE <- function(groups, bw = 0.003, gs = 128L, range = NULL) { # how to tune?
   if (is.null(range)) {range <- range(groups)} # use range in a whole
   list(
-    "dens" = lapply(groups, function(group) { 
+    "dens" = lapply(groups, function(group) {
         bkde(group, "normal", FALSE, bw, gs, range)$y %>% {./sum(.)}
     }),
     "axis" = bkde(groups[[1]], "normal", FALSE, bw, gs, range)$x
