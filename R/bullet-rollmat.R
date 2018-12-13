@@ -10,8 +10,8 @@
 #' @import xts
 #' @import zoo
 #' @export
-GenRollPairMatrix <- function(daily.ret, period = c('monthly', 'daily'), FUNC = NULL, winlen = 21) {
-  if (period == 'monthly') {df.roll <- apply.monthly(daily.ret, FUNC) %>% {xts(., as.yearmon(index(.)))}}
+GenRollPairMatrix <- function(daily.ret, period = c('monthly', 'daily'), FUNC = NULL, ..., winlen = 21) {
+  if (period == 'monthly') {df.roll <- apply.monthly(daily.ret, FUNC, ...) %>% {xts(., as.yearmon(index(.)))}}
   else if (period == 'daily') {df.roll <- daily.ret %>% rollapply(winlen, FUNC, by.column = F, align = 'right') %>% na.omit}
   `colnames<-`(df.roll, GenPairName(colnames(daily.ret))) # FUNC and GenPairName are all using GenUpperIJ for col indexing
 }
@@ -43,25 +43,33 @@ GenPairName <- function(names) {
 #' Vectorize asymmetry of sum of products
 #' @importFrom magrittr %>%
 #' @export
-VecAsymSP <- function(df) {stopifnot(any(colnames(df) == 'SPY')); (df[, 'SPY'] > 0) %>% {VecSP(df[!.]) - VecSP(df[.])}}
+VecAsymSP <- function(df, t = 0) {stopifnot(any(colnames(df) == 'SPY')); (df[, 'SPY'] > t) %>% {VecSP(df[!.]) - VecSP(df[.])}}
 
 
 #' Vectorize asymmetry of covariance by simple difference
+#' @importFrom magrittr %>%
 #' @export
-VecAsymVCOV <- function(df) {stopifnot(any(colnames(df) == 'SPY')); (df[, 'SPY'] > 0) %>% {VecVCOV(df[!.]) - VecVCOV(df[.])}}
+VecAsymVCOV <- function(df, t = 0) {stopifnot(any(colnames(df) == 'SPY')); (df[, 'SPY'] > t) %>% {VecVCOV(df[!.]) - VecVCOV(df[.])}}
 
 
 #' Vectorize covariance when the SPY is down
+#' @importFrom magrittr %>%
 #' @export
-VecBadVCOV <- function(df) {stopifnot(any(colnames(df) == 'SPY')); (df[, 'SPY'] > 0) %>% {VecVCOV(df[!.])}}
+VecBadVCOV <- function(df, t = 0) {stopifnot(any(colnames(df) == 'SPY')); VecVCOV(df[df[, 'SPY'] < t])}
 
+#' Vectorize covariance when the SPY is up
+#' @importFrom magrittr %>%
+#' @export
+VecGoodVCOV <- function(df, t = 0) {stopifnot(any(colnames(df) == 'SPY')); VecVCOV(df[df[, 'SPY'] > t])}
 
 #' Vectorize the upper tri part of vcov matrix for a dataframe
+#' @importFrom magrittr %>%
 #' @export
 VecVCOV <- function(df) {GenUpperIJ(ncol(df)) %>% lapply(function(x) cov(df[, x[1]], df[, x[2]])) %>% unlist}
 
 
 #' Vectorize Sum of Products for the upper tri matrix
+#' @importFrom magrittr %>%
 #' @export
 VecSP <- function(df) {GenUpperIJ(ncol(df)) %>% lapply(function(x) sum(df[, x[1]] * df[, x[2]])) %>% unlist}
 
